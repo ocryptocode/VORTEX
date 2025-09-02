@@ -1,3 +1,4 @@
+# import libraries
 import os
 import discord
 from discord.ext import commands
@@ -911,4 +912,5 @@ class TwitterRaiding(commands.Cog):
         await ctx.send(embed=help_embed)
 
 # Add to bot setup
+
 bot.add_cog(TwitterRaiding(bot))
