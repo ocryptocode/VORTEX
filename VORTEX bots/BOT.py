@@ -141,8 +141,6 @@ class MyCog(commands.Cog):
     async def greet(self, ctx):
         await ctx.send('Hello!')
 
-
-
     @commands.Cog.listener()
     async def on_message(self, message):
         if message.author == self.bot.user:
@@ -911,6 +909,9 @@ class TwitterRaiding(commands.Cog):
         )
         await ctx.send(embed=help_embed)
 
+# manage contributions
+
 # Add to bot setup
 
 bot.add_cog(TwitterRaiding(bot))
+
