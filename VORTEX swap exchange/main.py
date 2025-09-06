@@ -1,4 +1,6 @@
+# import necessary libraries
 from dotenv import load_dotenv
+import solana
 
 # load environment variables
 load_dotenv()
@@ -15,6 +17,7 @@ class VortexWallet:
 def swap_coins ():
     # exchange to $VORTEX
     
+
 
 
 
