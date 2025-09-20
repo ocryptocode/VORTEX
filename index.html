@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VORTEX Village - Crypto DAO Community</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <img src="wolf.img" alt="VORTEX Wolf" class="wolf-logo">
+                <span class="logo-text">VORTEX VILLAGE</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="#home" class="nav-link active">Home</a></li>
+                <li><a href="#about" class="nav-link">About</a></li>
+                <li><a href="#presales" class="nav-link">Presales</a></li>
+                <li><a href="#events" class="nav-link">Events</a></li>
+                <li><a href="#collabs" class="nav-link">Collabs</a></li>
+                <li><a href="#dao" class="nav-link">DAO</a></li>
+            </ul>
+            <div class="nav-toggle">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 3D Scene Container -->
+    <div id="scene-container"></div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Home Section -->
+        <section id="home" class="section active">
+            <div class="hero">
+                <div class="hero-content">
+                    <h1 class="hero-title">
+                        <span class="glitch" data-text="VORTEX VILLAGE">VORTEX VILLAGE</span>
+                    </h1>
+                    <p class="hero-subtitle">Where Crypto Meets Community in a Futuristic DAO Ecosystem</p>
+                    <div class="hero-stats">
+                        <div class="stat">
+                            <span class="stat-number" data-target="1250">0</span>
+                            <span class="stat-label">Village Members</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-number" data-target="50">0</span>
+                            <span class="stat-label">Active Projects</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-number" data-target="12">0</span>
+                            <span class="stat-label">Presales Live</span>
+                        </div>
+                    </div>
+                    <div class="hero-buttons">
+                        <button class="btn btn-primary">Join Village</button>
+                        <button class="btn btn-secondary">Explore DAO</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- About Section -->
+        <section id="about" class="section">
+            <div class="container">
+                <h2 class="section-title">About VORTEX Village</h2>
+                <div class="about-grid">
+                    <div class="about-card">
+                        <div class="card-icon">🏛️</div>
+                        <h3>DAO Governance</h3>
+                        <p>Participate in decentralized decision-making with our community-driven governance system.</p>
+                    </div>
+                    <div class="about-card">
+                        <div class="card-icon">🚀</div>
+                        <h3>Presales & Launchpad</h3>
+                        <p>Access exclusive early-stage crypto projects and presales before they hit the market.</p>
+                    </div>
+                    <div class="about-card">
+                        <div class="card-icon">🎯</div>
+                        <h3>Events & Giveaways</h3>
+                        <p>Join regular community events, AMAs, and exclusive giveaways for village members.</p>
+                    </div>
+                    <div class="about-card">
+                        <div class="card-icon">🤝</div>
+                        <h3>Strategic Collabs</h3>
+                        <p>Connect with other projects and communities through our partnership network.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Presales Section -->
+        <section id="presales" class="section">
+            <div class="container">
+                <h2 class="section-title">Live Presales</h2>
+                <div class="presales-grid">
+                    <div class="presale-card">
+                        <div class="presale-header">
+                            <img src="https://via.placeholder.com/60x60/4a90e2/ffffff?text=PROJ" alt="Project" class="presale-logo">
+                            <div class="presale-info">
+                                <h3>VortexSwap</h3>
+                                <p>Decentralized Exchange</p>
+                            </div>
+                        </div>
+                        <div class="presale-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 75%"></div>
+                            </div>
+                            <span class="progress-text">75% Complete</span>
+                        </div>
+                        <div class="presale-details">
+                            <div class="detail">
+                                <span>Price:</span>
+                                <span>$0.05</span>
+                            </div>
+                            <div class="detail">
+                                <span>Raised:</span>
+                                <span>$375K / $500K</span>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary">Participate</button>
+                    </div>
+                    <!-- More presale cards would go here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Events Section -->
+        <section id="events" class="section">
+            <div class="container">
+                <h2 class="section-title">Upcoming Events</h2>
+                <div class="events-timeline">
+                    <div class="event-item">
+                        <div class="event-date">
+                            <span class="day">15</span>
+                            <span class="month">DEC</span>
+                        </div>
+                        <div class="event-content">
+                            <h3>Village AMA with Solana Foundation</h3>
+                            <p>Join our exclusive AMA session with Solana Foundation representatives.</p>
+                            <span class="event-time">2:00 PM UTC</span>
+                        </div>
+                    </div>
+                    <div class="event-item">
+                        <div class="event-date">
+                            <span class="day">20</span>
+                            <span class="month">DEC</span>
+                        </div>
+                        <div class="event-content">
+                            <h3>VORTEX Token Giveaway</h3>
+                            <p>Massive token giveaway for active community members.</p>
+                            <span class="event-time">6:00 PM UTC</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Collabs Section -->
+        <section id="collabs" class="section">
+            <div class="container">
+                <h2 class="section-title">Strategic Collaborations</h2>
+                <div class="collabs-grid">
+                    <div class="collab-card">
+                        <img src="https://via.placeholder.com/120x60/ff6b6b/ffffff?text=SOLANA" alt="Solana" class="collab-logo">
+                        <h3>Solana Ecosystem</h3>
+                        <p>Official partnership with Solana Foundation for ecosystem development.</p>
+                    </div>
+                    <div class="collab-card">
+                        <img src="https://via.placeholder.com/120x60/4ecdc4/ffffff?text=RAYDIUM" alt="Raydium" class="collab-logo">
+                        <h3>Raydium DEX</h3>
+                        <p>Integration with Raydium for enhanced liquidity and trading features.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- DAO Section -->
+        <section id="dao" class="section">
+            <div class="container">
+                <h2 class="section-title">DAO Governance</h2>
+                <div class="dao-dashboard">
+                    <div class="dao-stats">
+                        <div class="dao-stat">
+                            <span class="dao-number">2,847</span>
+                            <span class="dao-label">VORTEX Holders</span>
+                        </div>
+                        <div class="dao-stat">
+                            <span class="dao-number">15</span>
+                            <span class="dao-label">Active Proposals</span>
+                        </div>
+                        <div class="dao-stat">
+                            <span class="dao-number">89%</span>
+                            <span class="dao-label">Participation Rate</span>
+                        </div>
+                    </div>
+                    <div class="proposals">
+                        <h3>Recent Proposals</h3>
+                        <div class="proposal-item">
+                            <h4>Increase Staking Rewards</h4>
+                            <div class="proposal-votes">
+                                <span class="vote-yes">Yes: 1,234</span>
+                                <span class="vote-no">No: 89</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>VORTEX Village</h3>
+                    <p>Building the future of decentralized communities.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="#home">Home</a></li>
+                        <li><a href="#about">About</a></li>
+                        <li><a href="#presales">Presales</a></li>
+                        <li><a href="#events">Events</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Community</h4>
+                    <div class="social-links">
+                        <a href="#" class="social-link">Twitter</a>
+                        <a href="#" class="social-link">Discord</a>
+                        <a href="#" class="social-link">Telegram</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
