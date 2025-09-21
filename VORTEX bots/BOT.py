@@ -193,9 +193,18 @@ class DappCog(commands.Cog):
         • !register_wallet <address> - Register your crypto wallet
         • !crypto_price <symbol> - Check crypto prices
         
+        **DAO Governance Commands:**
+        • !create_proposal <title> <duration_hours> <description> - Create a governance proposal
+        • !vote <proposal_id> <yes/no/abstain> - Vote on a proposal
+        • !proposal_status <proposal_id> - Check proposal status
+        • !list_proposals [active/completed/all] - List proposals
+        • !my_voting_power - Check your voting power
+        • !dao_help - Get help with DAO commands
+        
         **Admin Commands:**
         • !add_premium <@user> - Grant premium membership
         • !remove_premium <@user> - Revoke premium membership
+        • !dao_settings - View DAO settings (Admin only)
         """
         embed = discord.Embed(title="Bot Functionalities", description=functions, color=discord.Color.blue())
         await ctx.send(embed=embed)
@@ -433,13 +442,31 @@ async def on_command_error(ctx, error):
     else:
         await handle_error(ctx, error)
 
+# Load data on startup
+def load_data():
+    try:
+        with open('vortex_data.pkl', 'rb') as f:
+            data = pickle.load(f)
+            global vortex_coins, user_addresses, polls
+            vortex_coins = data.get('vortex_coins', {})
+            user_addresses = data.get('user_addresses', {})
+            polls = data.get('polls', {})
+            
+            # Load governance proposals if available
+            governance_cog = bot.get_cog('GovernanceDAO')
+            if governance_cog and 'governance_proposals' in data:
+                governance_cog.proposals = data['governance_proposals']
+    except FileNotFoundError:
+        print("No existing data file found. Starting fresh.")
+
 # Save data periodically
 def save_data():
     with open('vortex_data.pkl', 'wb') as f:
         pickle.dump({
             'vortex_coins': vortex_coins,
             'user_addresses': user_addresses,
-            'polls': polls
+            'polls': polls,
+            'governance_proposals': getattr(bot.get_cog('GovernanceDAO'), 'proposals', {})
         }, f)
 
 # You might want to call save_data periodically using Discord's tasks instead
@@ -461,8 +488,10 @@ async def setup():
     await bot.add_cog(Economy(bot))
     await bot.add_cog(Quiz(bot))
     await bot.add_cog(Crypto(bot))
+    await bot.add_cog(GovernanceDAO(bot))
 
-# Modify the bot.run line to this:
+# Load data and start bot
+load_data()
 asyncio.run(setup())
 bot.run(DISCORD_BOT_TOKEN)
 
@@ -824,9 +853,413 @@ class TwitterRaiding(commands.Cog):
         )
         await ctx.send(embed=help_embed)
 
+# Governance DAO Voting System
+class GovernanceDAO(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+        self.proposals = {}  # Store active and completed proposals
+        self.voting_power = {}  # Store user voting power
+        self.dao_settings = {
+            'min_proposal_duration': 24,  # hours
+            'max_proposal_duration': 168,  # hours (7 days)
+            'quorum_threshold': 0.1,  # 10% of eligible voters
+            'passing_threshold': 0.5,  # 50% majority
+            'min_voting_power': 100,  # Minimum VortexCoins to vote
+            'proposal_fee': 1000  # Cost to create a proposal
+        }
+        self.voting_roles = ['DAO Member', 'Governor', 'Admin']  # Roles that can vote
+
+    def calculate_voting_power(self, user_id, guild_id):
+        """Calculate user's voting power based on VortexCoins and roles"""
+        base_power = vortex_coins.get(guild_id, {}).get(user_id, 0)
+        
+        # Get user's roles for multiplier
+        guild = self.bot.get_guild(int(guild_id))
+        if guild:
+            member = guild.get_member(int(user_id))
+            if member:
+                role_multiplier = 1.0
+                for role in member.roles:
+                    if role.name in ['Governor']:
+                        role_multiplier = 2.0
+                    elif role.name in ['DAO Member']:
+                        role_multiplier = 1.5
+                
+                return int(base_power * role_multiplier)
+        
+        return base_power
+
+    @commands.command(name='create_proposal')
+    async def create_proposal(self, ctx, title: str, duration: int, *, description: str):
+        """
+        Create a new governance proposal
+        Usage: !create_proposal <title> <duration_hours> <description>
+        """
+        user_id = str(ctx.author.id)
+        guild_id = str(ctx.guild.id)
+        
+        # Check if user has enough VortexCoins for proposal fee
+        user_balance = vortex_coins.get(guild_id, {}).get(user_id, 0)
+        if user_balance < self.dao_settings['proposal_fee']:
+            await ctx.send(f"You need {self.dao_settings['proposal_fee']} VortexCoins to create a proposal!")
+            return
+        
+        # Validate duration
+        if duration < self.dao_settings['min_proposal_duration'] or duration > self.dao_settings['max_proposal_duration']:
+            await ctx.send(f"Duration must be between {self.dao_settings['min_proposal_duration']} and {self.dao_settings['max_proposal_duration']} hours!")
+            return
+        
+        # Check if user has voting power
+        voting_power = self.calculate_voting_power(user_id, guild_id)
+        if voting_power < self.dao_settings['min_voting_power']:
+            await ctx.send(f"You need at least {self.dao_settings['min_voting_power']} voting power to create proposals!")
+            return
+        
+        # Deduct proposal fee
+        vortex_coins[guild_id][user_id] -= self.dao_settings['proposal_fee']
+        
+        # Create proposal
+        proposal_id = len(self.proposals) + 1
+        self.proposals[proposal_id] = {
+            'id': proposal_id,
+            'title': title,
+            'description': description,
+            'author': user_id,
+            'author_name': ctx.author.display_name,
+            'guild_id': guild_id,
+            'created_at': datetime.now(),
+            'duration': duration,
+            'status': 'active',
+            'votes': {'yes': {}, 'no': {}, 'abstain': {}},
+            'total_voting_power': 0,
+            'quorum_met': False,
+            'passed': False
+        }
+        
+        # Create proposal embed
+        embed = discord.Embed(
+            title=f"🗳️ New DAO Proposal #{proposal_id}",
+            description=f"**{title}**",
+            color=discord.Color.blue()
+        )
+        embed.add_field(name="Description", value=description, inline=False)
+        embed.add_field(name="Author", value=ctx.author.display_name, inline=True)
+        embed.add_field(name="Duration", value=f"{duration} hours", inline=True)
+        embed.add_field(name="Status", value="🟢 Active", inline=True)
+        embed.add_field(name="Voting Power Required", value=f"{self.dao_settings['min_voting_power']}+", inline=True)
+        embed.add_field(name="Quorum Threshold", value=f"{self.dao_settings['quorum_threshold']*100}%", inline=True)
+        embed.add_field(name="Passing Threshold", value=f"{self.dao_settings['passing_threshold']*100}%", inline=True)
+        
+        proposal_msg = await ctx.send(embed=embed)
+        
+        # Add voting reactions
+        await proposal_msg.add_reaction('✅')  # Yes
+        await proposal_msg.add_reaction('❌')  # No
+        await proposal_msg.add_reaction('🤷')  # Abstain
+        
+        # Store message ID for tracking
+        self.proposals[proposal_id]['message_id'] = proposal_msg.id
+        self.proposals[proposal_id]['channel_id'] = ctx.channel.id
+        
+        # Schedule proposal end
+        self.bot.loop.create_task(self.end_proposal(proposal_id, duration))
+        
+        await ctx.send(f"Proposal #{proposal_id} created successfully! Voting is now open for {duration} hours.")
+
+    @commands.command(name='vote')
+    async def vote(self, ctx, proposal_id: int, choice: str):
+        """
+        Vote on a proposal
+        Usage: !vote <proposal_id> <yes/no/abstain>
+        """
+        if proposal_id not in self.proposals:
+            await ctx.send("Invalid proposal ID!")
+            return
+        
+        proposal = self.proposals[proposal_id]
+        
+        if proposal['status'] != 'active':
+            await ctx.send("This proposal is no longer active!")
+            return
+        
+        # Check if user has voting power
+        user_id = str(ctx.author.id)
+        voting_power = self.calculate_voting_power(user_id, proposal['guild_id'])
+        
+        if voting_power < self.dao_settings['min_voting_power']:
+            await ctx.send(f"You need at least {self.dao_settings['min_voting_power']} voting power to vote!")
+            return
+        
+        # Check if user has already voted
+        if user_id in proposal['votes']['yes'] or user_id in proposal['votes']['no'] or user_id in proposal['votes']['abstain']:
+            await ctx.send("You have already voted on this proposal!")
+            return
+        
+        # Validate choice
+        choice = choice.lower()
+        if choice not in ['yes', 'no', 'abstain']:
+            await ctx.send("Invalid choice! Use: yes, no, or abstain")
+            return
+        
+        # Record vote
+        proposal['votes'][choice][user_id] = voting_power
+        
+        # Update total voting power
+        proposal['total_voting_power'] = sum(
+            sum(votes.values()) for votes in proposal['votes'].values()
+        )
+        
+        await ctx.send(f"Vote recorded! You voted **{choice}** with {voting_power} voting power.")
+
+    @commands.command(name='proposal_status')
+    async def proposal_status(self, ctx, proposal_id: int):
+        """
+        Check the status of a proposal
+        Usage: !proposal_status <proposal_id>
+        """
+        if proposal_id not in self.proposals:
+            await ctx.send("Invalid proposal ID!")
+            return
+        
+        proposal = self.proposals[proposal_id]
+        
+        # Calculate vote totals
+        yes_votes = sum(proposal['votes']['yes'].values())
+        no_votes = sum(proposal['votes']['no'].values())
+        abstain_votes = sum(proposal['votes']['abstain'].values())
+        total_votes = yes_votes + no_votes + abstain_votes
+        
+        # Calculate percentages
+        yes_percentage = (yes_votes / total_votes * 100) if total_votes > 0 else 0
+        no_percentage = (no_votes / total_votes * 100) if total_votes > 0 else 0
+        
+        # Check quorum and passing status
+        guild = self.bot.get_guild(int(proposal['guild_id']))
+        eligible_voters = 0
+        if guild:
+            for member in guild.members:
+                if any(role.name in self.voting_roles for role in member.roles):
+                    eligible_voters += 1
+        
+        quorum_met = total_votes >= (eligible_voters * self.dao_settings['quorum_threshold'])
+        passed = yes_percentage > (self.dao_settings['passing_threshold'] * 100) and quorum_met
+        
+        # Create status embed
+        embed = discord.Embed(
+            title=f"📊 Proposal #{proposal_id} Status",
+            description=f"**{proposal['title']}**",
+            color=discord.Color.green() if passed else discord.Color.red()
+        )
+        
+        embed.add_field(name="Status", value=proposal['status'].title(), inline=True)
+        embed.add_field(name="Author", value=proposal['author_name'], inline=True)
+        embed.add_field(name="Created", value=proposal['created_at'].strftime("%Y-%m-%d %H:%M"), inline=True)
+        
+        embed.add_field(name="Yes Votes", value=f"{yes_votes} ({yes_percentage:.1f}%)", inline=True)
+        embed.add_field(name="No Votes", value=f"{no_votes} ({no_percentage:.1f}%)", inline=True)
+        embed.add_field(name="Abstain", value=f"{abstain_votes}", inline=True)
+        
+        embed.add_field(name="Total Voting Power", value=f"{total_votes}", inline=True)
+        embed.add_field(name="Quorum Met", value="✅" if quorum_met else "❌", inline=True)
+        embed.add_field(name="Passing", value="✅" if passed else "❌", inline=True)
+        
+        await ctx.send(embed=embed)
+
+    @commands.command(name='list_proposals')
+    async def list_proposals(self, ctx, status: str = 'active'):
+        """
+        List all proposals
+        Usage: !list_proposals [active/completed/all]
+        """
+        if status not in ['active', 'completed', 'all']:
+            await ctx.send("Invalid status! Use: active, completed, or all")
+            return
+        
+        filtered_proposals = []
+        for proposal in self.proposals.values():
+            if status == 'all' or proposal['status'] == status:
+                filtered_proposals.append(proposal)
+        
+        if not filtered_proposals:
+            await ctx.send(f"No {status} proposals found!")
+            return
+        
+        embed = discord.Embed(
+            title=f"📋 {status.title()} Proposals",
+            color=discord.Color.blue()
+        )
+        
+        for proposal in filtered_proposals[-10:]:  # Show last 10
+            status_emoji = "🟢" if proposal['status'] == 'active' else "🔴"
+            embed.add_field(
+                name=f"{status_emoji} Proposal #{proposal['id']}: {proposal['title']}",
+                value=f"Author: {proposal['author_name']} | Status: {proposal['status'].title()}",
+                inline=False
+            )
+        
+        await ctx.send(embed=embed)
+
+    @commands.command(name='my_voting_power')
+    async def my_voting_power(self, ctx):
+        """
+        Check your current voting power
+        Usage: !my_voting_power
+        """
+        user_id = str(ctx.author.id)
+        guild_id = str(ctx.guild.id)
+        
+        voting_power = self.calculate_voting_power(user_id, guild_id)
+        base_balance = vortex_coins.get(guild_id, {}).get(user_id, 0)
+        
+        # Get role multiplier
+        role_multiplier = 1.0
+        role_name = "Member"
+        guild = self.bot.get_guild(int(guild_id))
+        if guild:
+            member = guild.get_member(int(user_id))
+            if member:
+                for role in member.roles:
+                    if role.name in ['Governor']:
+                        role_multiplier = 2.0
+                        role_name = "Governor"
+                    elif role.name in ['DAO Member']:
+                        role_multiplier = 1.5
+                        role_name = "DAO Member"
+        
+        embed = discord.Embed(
+            title=f"🗳️ {ctx.author.display_name}'s Voting Power",
+            color=discord.Color.blue()
+        )
+        embed.add_field(name="Base Balance", value=f"{base_balance} VortexCoins", inline=True)
+        embed.add_field(name="Role", value=role_name, inline=True)
+        embed.add_field(name="Role Multiplier", value=f"{role_multiplier}x", inline=True)
+        embed.add_field(name="Total Voting Power", value=f"{voting_power}", inline=True)
+        embed.add_field(name="Can Vote", value="✅" if voting_power >= self.dao_settings['min_voting_power'] else "❌", inline=True)
+        embed.add_field(name="Can Create Proposals", value="✅" if voting_power >= self.dao_settings['min_voting_power'] else "❌", inline=True)
+        
+        await ctx.send(embed=embed)
+
+    @commands.command(name='dao_settings')
+    @commands.has_role('Admin')
+    async def dao_settings(self, ctx):
+        """
+        View current DAO settings (Admin only)
+        Usage: !dao_settings
+        """
+        embed = discord.Embed(
+            title="⚙️ DAO Settings",
+            color=discord.Color.gold()
+        )
+        
+        for setting, value in self.dao_settings.items():
+            if isinstance(value, float):
+                value = f"{value*100}%"
+            elif setting in ['min_proposal_duration', 'max_proposal_duration']:
+                value = f"{value} hours"
+            embed.add_field(name=setting.replace('_', ' ').title(), value=value, inline=True)
+        
+        embed.add_field(name="Voting Roles", value=", ".join(self.voting_roles), inline=False)
+        
+        await ctx.send(embed=embed)
+
+    async def end_proposal(self, proposal_id: int, duration_hours: int):
+        """
+        End a proposal after its duration expires
+        """
+        await asyncio.sleep(duration_hours * 3600)  # Convert hours to seconds
+        
+        if proposal_id not in self.proposals:
+            return
+        
+        proposal = self.proposals[proposal_id]
+        proposal['status'] = 'completed'
+        
+        # Calculate final results
+        yes_votes = sum(proposal['votes']['yes'].values())
+        no_votes = sum(proposal['votes']['no'].values())
+        abstain_votes = sum(proposal['votes']['abstain'].values())
+        total_votes = yes_votes + no_votes + abstain_votes
+        
+        # Check quorum and passing status
+        guild = self.bot.get_guild(int(proposal['guild_id']))
+        eligible_voters = 0
+        if guild:
+            for member in guild.members:
+                if any(role.name in self.voting_roles for role in member.roles):
+                    eligible_voters += 1
+        
+        quorum_met = total_votes >= (eligible_voters * self.dao_settings['quorum_threshold'])
+        yes_percentage = (yes_votes / total_votes * 100) if total_votes > 0 else 0
+        passed = yes_percentage > (self.dao_settings['passing_threshold'] * 100) and quorum_met
+        
+        proposal['quorum_met'] = quorum_met
+        proposal['passed'] = passed
+        
+        # Send final results
+        channel = self.bot.get_channel(proposal['channel_id'])
+        if channel:
+            embed = discord.Embed(
+                title=f"🏁 Proposal #{proposal_id} Results",
+                description=f"**{proposal['title']}**",
+                color=discord.Color.green() if passed else discord.Color.red()
+            )
+            
+            embed.add_field(name="Final Status", value="✅ PASSED" if passed else "❌ FAILED", inline=True)
+            embed.add_field(name="Quorum Met", value="✅" if quorum_met else "❌", inline=True)
+            embed.add_field(name="Total Voting Power", value=f"{total_votes}", inline=True)
+            
+            embed.add_field(name="Yes Votes", value=f"{yes_votes} ({yes_percentage:.1f}%)", inline=True)
+            embed.add_field(name="No Votes", value=f"{no_votes} ({100-yes_percentage:.1f}%)", inline=True)
+            embed.add_field(name="Abstain", value=f"{abstain_votes}", inline=True)
+            
+            await channel.send(embed=embed)
+
+    @commands.command(name='dao_help')
+    async def dao_help(self, ctx):
+        """
+        Display help for DAO commands
+        Usage: !dao_help
+        """
+        help_embed = discord.Embed(
+            title="🗳️ DAO Governance Help",
+            description="Commands for participating in DAO governance",
+            color=discord.Color.blue()
+        )
+        
+        help_embed.add_field(
+            name="Creating Proposals",
+            value="`!create_proposal <title> <duration_hours> <description>`\nCreate a new governance proposal",
+            inline=False
+        )
+        
+        help_embed.add_field(
+            name="Voting",
+            value="`!vote <proposal_id> <yes/no/abstain>`\nVote on an active proposal",
+            inline=False
+        )
+        
+        help_embed.add_field(
+            name="Information",
+            value="`!proposal_status <proposal_id>` - Check proposal status\n"
+                  "`!list_proposals [active/completed/all]` - List proposals\n"
+                  "`!my_voting_power` - Check your voting power",
+            inline=False
+        )
+        
+        help_embed.add_field(
+            name="Requirements",
+            value=f"• Minimum {self.dao_settings['min_voting_power']} VortexCoins to vote\n"
+                  f"• {self.dao_settings['proposal_fee']} VortexCoins to create proposals\n"
+                  f"• {self.dao_settings['quorum_threshold']*100}% quorum required\n"
+                  f"• {self.dao_settings['passing_threshold']*100}% majority to pass",
+            inline=False
+        )
+        
+        await ctx.send(embed=help_embed)
+
 # manage contributions
 
 # Add to bot setup
 
 bot.add_cog(TwitterRaiding(bot))
-
+bot.add_cog(GovernanceDAO(bot))
