@@ -1,4 +1,4 @@
 # VORTEX
  DAO ecosystem
 
-we are helping projects
+we are helping projects make growth plans and growth audits
