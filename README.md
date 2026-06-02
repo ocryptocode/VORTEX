@@ -11,6 +11,7 @@ we had many collabs and synergies
 
 
 
+
 tech and infrastructure and blockchain ecosystem, we are now having many collabs that include. 
 
 
