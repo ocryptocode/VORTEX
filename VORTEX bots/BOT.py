@@ -15,10 +15,13 @@ import time  # time for mining cooldowns
 import tweepy
 from datetime import datetime, timedelta
 
+
+
 # Load environment variables
 load_dotenv()
 DISCORD_BOT_TOKEN = os.getenv('DISCORD_BOT_TOKEN')
-TRON_API_KEY = os.getenv('TRON_API_KEY')
+SOL_API_KEY
+
 
 # Create Intents object
 intents = Intents.default()
