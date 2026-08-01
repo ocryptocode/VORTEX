@@ -1,6 +1,4 @@
 # VORTEX ecosystem
-
-
 DAO ecosystem and web4 community and the best tech tool
 
 
