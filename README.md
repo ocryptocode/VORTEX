@@ -9,6 +9,6 @@ we had many collabs and synergies
 
 tech and infrastructure and blockchain ecosystem, we are now having many collabs that include. 
 
-
+referral program coming part of the paid plan alongside builder os and all roadmaps on our website
 
 we are now preparing roadmap 2.0 and book of secrets that includes everything we have ever worked on
