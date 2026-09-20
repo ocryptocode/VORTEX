@@ -1,4 +1,4 @@
-# VORTEX
+# VORTEX capital ecosystem
 
 DAO ecosystem and web4 community and the best tech tool.
 
