@@ -15,6 +15,7 @@ referral program coming part of the paid plan alongside builder os and all roadm
 
 we are now preparing roadmap 2.0 and book of secrets that includes everything we have ever worked on
 
-### os
+### os 
+## vortex os tools
 
 ### website
