@@ -1,6 +1,4 @@
 # VORTEX capital ecosystem
-
-
 DAO ecosystem and web4 community and the best tech tool.
 
 we are helping projects make growth plans and growth audits and strategies 
