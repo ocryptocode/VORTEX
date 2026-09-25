@@ -8,6 +8,7 @@ we had many collabs and synergies
 everything is built upon the OS.
 
 
+
 tech and infrastructure and blockchain ecosystem, we are now having many collabs that include. 
 
 referral program coming part of the paid plan alongside builder os and all roadmaps on our website
