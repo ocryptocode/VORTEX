@@ -1,5 +1,4 @@
 # VORTEX 
-
 DAO ecosystem and web4 community and the best tech tool.
 
 we are helping projects make growth plans and growth audits and strategies 
@@ -17,6 +16,8 @@ referral program coming part of the paid plan alongside builder os and all roadm
 we are now preparing roadmap 2.0 and book of secrets that includes everything we have ever worked on
 
 ### os 
+
 ## vortex os tools
+whop services
 
 ### website
