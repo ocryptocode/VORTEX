@@ -1,8 +1,7 @@
 # VORTEX 
 
 
-DAO ecosystem and web4 community and the best tech tool
-we are helping projects make growth plans and growth audits and strategies
+DAO ecosystem and web4 community and the best tech tool, we are helping projects make growth plans and growth audits and strategies
 everything is built upon the OS.
 
 tech and infrastructure and blockchain ecosystem, we are now having many collabs that include. 
