@@ -37,6 +37,7 @@ vortex_coins = {}
 user_balances = {}
 user_addresses = {}
 coins = {}
+memecoins = {}
 
 
 # Events
